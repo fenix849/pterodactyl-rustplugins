@@ -6,7 +6,7 @@ UMODBASEURL="https://umod.org/plugins/"
 UMODPLUGINFILE="/root/bin/umodpluginlist.cfg"
 GENERICPLUGINFILE="/root/bin/genericpluginlist.cfg"
 
-USAGE="rustplugins usage: \n \
+USAGE="rustplugins usage: \n\n \
 	-u/--umod file.cs Download plugin from https://umod.org where file.cs is the name of the mod file, save it in oxide/plugins and add it to the configuration for -u to update.\n \
 	-g/--generic http://uri.to/file.cs Download plugin from any web uri/url, save it in oxide/plugins and add it to the configuration for -u to update.\n \
 	-p/--update Update plugins listed in configuration files.\n\n"
@@ -81,7 +81,8 @@ if [[ ${UPDATE} == "YES" ]];then
 		docker exec -it $RUSTCONTAINER curl -f -s ${UMODBASEURL}${plugin} -o oxide/plugins/${plugin}
 		printf "...Done\n"
 	done
-	IFS=\N
+	DEFAULTIFS=$IFS #Save Default Internal Field Separator
+	IFS=\N 		#Remove Space from the Internal Field Separator
 	printf "Generic Plugins...\n"
 	for plugin in $(cat $GENERICPLUGINFILE); do
 		PLUGINNAME=$(echo $plugin|awk '{print $1}')
@@ -90,6 +91,7 @@ if [[ ${UPDATE} == "YES" ]];then
 		docker exec -it $RUSTCONTAINER curl -f -s ${PLUGINURI} -o oxide/plugins/${PLUGINNAME}.cs
 		printf "...Done\n"
 	done
+	IFS=$DEFAULTIFS #Restore Saved Default Internal Field Separator
 	printf "\n"
 fi
 
