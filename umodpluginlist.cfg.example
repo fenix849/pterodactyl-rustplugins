@@ -12,7 +12,6 @@ BGrade.cs
 AutoDoors.cs
 Trade.cs
 BlueprintManager.cs
-NoGiveNotices.cs
 NoWorkbench.cs
 DisableTemperatureFunctions.cs
 TimeOfDay.cs
