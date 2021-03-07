@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+#set -x #debug
+RUSTCONTAINER=$(docker ps |grep 'core:rust'|awk '{print $1}')
+
+UMODBASEURL="https://umod.org/plugins/"
+UMODPLUGINFILE="/root/bin/umodpluginlist.cfg"
+GENERICPLUGINFILE="/root/bin/genericpluginlist.cfg"
+
+USAGE="rustplugins usage: \n \
+	-u/--umod file.cs Download plugin from https://umod.org where file.cs is the name of the mod file, save it in oxide/plugins and add it to the configuration for -u to update.\n \
+	-g/--generic http://uri.to/file.cs Download plugin from any web uri/url, save it in oxide/plugins and add it to the configuration for -u to update.\n \
+	-p/--update Update plugins listed in configuration files.\n\n"
+
+#Print usage if no arguments
+if  [ $# -eq 0 ]; then
+	printf "${USAGE}"
+fi
+
+#argument case
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+key="$1"
+
+case $key in
+	-u|--umod)	#download oxide/umod mod based on filename
+	UMOD = "$2"
+	shift
+	shift
+	;;
+	-g|--generic)	#download generic mod based on url
+	GENERIC = "$2"
+	GENERICNAME = "$3"
+	shift
+	shift
+	shift
+	;;
+	-p|--update)
+	UPDATE=YES		
+	shift
+	;;
+	*)    # unknown option
+	printf "Invalid option %b.\n" "$1"
+	printf "${USAGE}"
+	shift
+	;;
+esac
+done
+	
+#Add uMod file
+if ! [[ -z ${UMOD} ]]; then
+	printf "Downloading uMod file ${UMOD}\n"
+	docker exec -it $RUSTCONTAINER curl -s -f ${UMODBASEURL}${UMOD} -o oxide/plugins/${UMOD}
+	printf "Adding ${UMOD} to $UMODPLUGINFILE\n"
+	echo ${UMOD} >> $UMODPLUGINFILE	
+	printf "Done\n"
+fi
+
+#add generic file
+if ! [[ -z ${GENERIC} ]]; then
+	if [[ -z ${GENERICNAME} ]]; then
+		printf ${USAGE}
+		exit 1
+	fi	
+	printf "Downloading ${GENERIC}\n"
+	docker exec -it $RUSTCONTAINER curl -s -f ${GENERIC}  -o oxide/plugins/${}
+	printf "Adding ${GENERIC} to $UMODPLUGINFILE\n"
+	echo  ${GENERICNAME} ${GENERIC} >> $GENERICPLUGINFILE	
+	printf "Done"
+fi
+
+#update all plugins
+if [[ ${UPDATE} == "YES" ]];then
+	printf "Plugin Backup...\n"
+	docker exec -it $RUSTCONTAINER mkdir -p pluginbackup
+	docker exec -it $RUSTCONTAINER tar -czf pluginbackup/plugins$(date -u +%d%m%y).tgz oxide/plugins
+	printf "uMod Plugins...\n"
+	for plugin in $(cat $UMODPLUGINFILE); do
+
+		printf "Downloading $plugin"
+		docker exec -it $RUSTCONTAINER curl -f -s ${UMODBASEURL}${plugin} -o oxide/plugins/${plugin}
+		printf "...Done\n"
+	done
+	IFS=\N
+	printf "Generic Plugins...\n"
+	for plugin in $(cat $GENERICPLUGINFILE); do
+		PLUGINNAME=$(echo $plugin|awk '{print $1}')
+		PLUGINURI=$(echo $plugin|awk '{print $2}')
+		printf "Downloading $PLUGINNAME from $PLUGINURI"
+		docker exec -it $RUSTCONTAINER curl -f -s ${PLUGINURI} -o oxide/plugins/${PLUGINNAME}.cs
+		printf "...Done\n"
+	done
+	printf "\n"
+fi
+
+
+
