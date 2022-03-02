@@ -1,6 +1,6 @@
 # pterodactyl-rustplugins
 
-This tool is deprecated my recommendation is to use fenix849/pyrustplugins
+This tool is deprecated my recommendation is to use https://github.com/fenix849/pyrustplugins
 
 Command line tool to manage rust plugins in pterodactyl docker containers.
 
